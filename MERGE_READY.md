@@ -11,4 +11,4 @@ This branch is ready to be merged into the main branch.
 - README.md with Java 25 sample code documentation
 
 ## Note
-Since the `main` branch does not exist yet in this repository, this PR should be set as the base branch (main) or merged to create the main branch.
+This is the initial branch of the repository. When this PR is merged, it will establish the main branch with the Java 25 sample code content.
