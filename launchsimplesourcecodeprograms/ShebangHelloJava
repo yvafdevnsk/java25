@@ -1,0 +1,7 @@
+#!/usr/local/bin/java25 --source 25
+
+public class HelloJava {
+    public static void main(String[] args) {
+        IO.println("Shebang Hello " + args[0]);
+    }
+}
