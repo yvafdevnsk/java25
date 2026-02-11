@@ -136,3 +136,280 @@ OpenJDK 64-Bit Server VM Temurin-25.0.1+8 (build 25.0.1+8-LTS, mixed mode, shari
 - [Update WSL | Basic commands for WSL | Microsoft Learn](https://learn.microsoft.com/en-us/windows/wsl/basic-commands#update-wsl)
 - [Check WSL version | Basic commands for WSL | Microsoft Learn](https://learn.microsoft.com/en-us/windows/wsl/basic-commands#check-wsl-version)
 - [Update and upgrade packages | Set up a WSL development environment | Microsoft Learn](https://learn.microsoft.com/en-us/windows/wsl/setup/environment#update-and-upgrade-packages)
+
+## 2. 最初の単一ファイルソースコードプログラムの実行
+
+プロジェクトのディレクトリ構造を作成する。
+```
+mkdir -p /home/mizuki/workspace/java25/launchsimplesourcecodeprograms
+mkdir -p /home/mizuki/workspace/java25/launchsimplesourcecodeprograms/model
+mkdir -p /home/mizuki/workspace/java25/launchsimplesourcecodeprograms/service
+mkdir -p /home/mizuki/workspace/java25/launchsimplesourcecodeprograms/lib
+```
+
+空のテキストファイルを作成する。
+```
+cd /home/mizuki/workspace/java25/launchsimplesourcecodeprograms
+touch HelloWorld.java
+touch HelloJava.java
+touch MultipleClassesInSameFile.java
+touch MultiFileSourceCodePrograms.java
+touch ScannerExample.java
+touch ReferenceNonJDKClass.java
+touch ShebangHelloJava
+cd /home/mizuki/workspace/java25/launchsimplesourcecodeprograms/model
+touch Person.java
+cd /home/mizuki/workspace/java25/launchsimplesourcecodeprograms/service
+touch PersonService.java
+```
+
+ubuntu上でvscodeを起動する。
+```
+cd /home/mizuki/workspace/java25/launchsimplesourcecodeprograms
+code .
+```
+
+HelloWorld.javaファイルに以下のコードを記述する。
+```
+public class HelloWorld {
+    public static void main(String[] args) {
+        IO.println("Hello World!");
+    }
+}
+```
+Javaプログラムを実行する。
+```
+java25 HelloWorld.java
+```
+実行結果。
+```
+Hello World!
+```
+
+Javaプログラムに引数を渡す。HelloJava.javaファイルに以下のコードを記述する。
+```
+public class HelloJava {
+    public static void main(String[] args) {
+        IO.println("Hello " + args[0]);
+    }
+}
+```
+Javaプログラムを実行する。
+```
+java25 HelloJava.java Mizuki!
+```
+実行結果。
+```
+Hello Mizuki!
+```
+
+同じファイル内に複数のクラスを定義する。MultipleClassesInSameFile.javaファイルに以下のコードを記述する。
+```
+public class MultipleClassesInSameFile {
+    public static void main(String[] args) {
+        IO.println(GenerateMessage.generateMessage());
+        IO.println(AnotherMessage.generateAnotherMessage());
+    }
+}
+
+class GenerateMessage {
+    static String generateMessage() {
+        return "Here is one message";
+    }
+}
+
+class AnotherMessage {
+    static String generateAnotherMessage() {
+        return "Here is another message";
+    }
+}
+```
+Javaプログラムを実行する。
+```
+java25 MultipleClassesInSameFile.java
+```
+実行結果。
+```
+Here is one message
+Here is another message
+```
+
+複数ファイルのソースコードで構成されるプログラムを起動する。ソースコードのパッケージ階層とファイルの場所を一致させる。MultiFileSourceCodePrograms.javaファイルに以下のコードを記述する。
+```
+import model.Person;
+import service.PersonService;
+
+public class MultiFileSourceCodePrograms {
+    public static void main(String[] args) {
+        PersonService service = new PersonService();
+        Person person = service.createNewPerson();
+        IO.println(person.printName() + " has been created!");
+    }
+}
+```
+model/Person.javaファイルに以下のコードを記述する。
+```
+package model;
+
+public class Person {
+    private String name;
+
+    public Person(String name) {
+        this.name = name;
+    }
+
+    public String printName() {
+        return this.name;
+    }
+}
+```
+service/PersonService.javaファイルに以下のコードを記述する。
+```
+package service;
+
+import model.Person;
+
+public class PersonService {
+    public Person createNewPerson() {
+        return new Person("Mizuki");
+    }
+}
+```
+Javaプログラムを実行する。
+```
+java25 MultiFileSourceCodePrograms.java
+```
+実行結果。
+```
+Mizuki has been created!
+```
+
+コアJDKに含まれるクラスは実行するためにクラスパスに追加する必要はない。ScannerExample.javaファイルに以下のコードを記述する。
+```
+import java.util.Scanner;
+import java.util.regex.MatchResult;
+
+public class ScannerExample {
+    public static void main(String... args) {
+        String wordsAndNumbers = """
+            Longing rusted furnace
+            daybreak 17 benign
+            9 homecoming 1
+            freight car
+        """;
+
+        try (Scanner scanner = new Scanner(wordsAndNumbers)) {
+            scanner.findAll("benign").map(MatchResult::group).forEach(IO::println);
+        }
+    }
+}
+```
+Javaプログラムを実行する。
+```
+java25 ScannerExample.java
+```
+実行結果。
+```
+benign
+```
+
+コアJDKに含まれないクラスは実行するためにクラスパスに追加する必要がある。ReferenceNonJDKClass.javaファイルに以下のコードを記述する。
+```
+import org.apache.commons.lang3.RandomUtils;
+
+public class ReferenceNonJDKClass {
+    public static void main(String[] args) {
+        IO.println(RandomUtils.nextInt());
+    }
+}
+```
+Javaプログラムを実行する。
+```
+java25 ReferenceNonJDKClass.java
+```
+実行結果。クラスパスを指定していないのでエラーになる。
+```
+ReferenceNonJDKClass.java:1: error: package org.apache.commons.lang3 does not exist
+import org.apache.commons.lang3.RandomUtils;
+                               ^
+ReferenceNonJDKClass.java:5: error: cannot find symbol
+        IO.println(RandomUtils.nextInt());
+                   ^
+  symbol:   variable RandomUtils
+  location: class ReferenceNonJDKClass
+2 errors
+error: compilation failed
+```
+Apache Commons Lang 3.20.0 (Java 8+)をダウンロードする。
+```
+cd /home/mizuki/workspace/java25/launchsimplesourcecodeprograms/lib
+wget https://dlcdn.apache.org//commons/lang/binaries/commons-lang3-3.20.0-bin.tar.gz
+```
+ダウンロードしたファイルを展開する。
+```
+tar -xvf commons-lang3-3.20.0-bin.tar.gz
+```
+クラスパスを指定してJavaプログラムを実行する。
+```
+cd /home/mizuki/workspace/java25/launchsimplesourcecodeprograms
+java25 -cp ./lib/commons-lang3-3.20.0/commons-lang3-3.20.0.jar ReferenceNonJDKClass.java
+```
+実行結果。非推奨のメソッドを使用している警告が表示される。
+```
+ReferenceNonJDKClass.java:5: warning: [deprecation] nextInt() in RandomUtils has been deprecated
+        IO.println(RandomUtils.nextInt());
+                              ^
+1 warning
+399830253
+```
+推奨されているメソッド(RandomUtils.secure())を使用して、ReferenceNonJDKClass.javaファイルを更新する。
+```
+import org.apache.commons.lang3.RandomUtils;
+
+public class ReferenceNonJDKClass {
+    public static void main(String[] args) {
+        IO.println(RandomUtils.secure().randomInt());
+    }
+}
+```
+クラスパスを指定してJavaプログラムを実行する。
+```
+cd /home/mizuki/workspace/java25/launchsimplesourcecodeprograms
+java25 -cp ./lib/commons-lang3-3.20.0/commons-lang3-3.20.0.jar ReferenceNonJDKClass.java
+```
+実行結果。
+```
+1752525595
+```
+
+ShebangファイルとしてJavaプログラムを実行する。ShebangHelloJavaファイルに以下のコードを記述する。
+```
+#!/usr/local/bin/java25 --source 25
+
+public class HelloJava {
+    public static void main(String[] args) {
+        IO.println("Shebang Hello " + args[0]);
+    }
+}
+```
+ShebangHelloJavaファイルに実行権限を付与する。
+```
+chmod +x ShebangHelloJava
+```
+ShebangHelloJavaファイルを実行する。
+```
+./ShebangHelloJava World
+```
+実行結果。
+```
+Shebang Hello World
+```
+
+参考情報。
+- [Launching Simple Source-Code Programs | Dev.java](https://dev.java/learn/launch-simple-source-code-programs/)
+- [IO (JavaSE 25 & JDK 25)](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/IO.html)
+- [Scanner (JavaSE 25 & JDK 25)](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Scanner.html)
+- [MatchResult (JavaSE 25 & JDK 25)](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/regex/MatchResult.html)
+- [JavaのPatternとは？正規表現のパターンを表すクラス「Pattern」を解説](https://www.bold.ne.jp/engineer-club/java-pattern)
+- [Home - Apache Commons Lang](https://commons.apache.org/proper/commons-lang/)
+- [org.apache.commons.lang3 > RandomUtils.secure()](https://commons.apache.org/proper/commons-lang/apidocs/org/apache/commons/lang3/RandomUtils.html#secure())
