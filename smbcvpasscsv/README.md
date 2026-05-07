@@ -1,8 +1,9 @@
-# Java25(LTS): 三井住友カード会員向けインターネットサービス『Vpass』の利用明細のCSVファイルから「利用店名」ごとの「利用金額」の小計および累計を出力する
+# Java25(LTS): 三井住友カード会員向けインターネットサービス『Vpass』の利用明細のCSVファイルから「利用店名」ごとの「支払い金額（今回の支払い金額）」の小計および累計を出力する
 
 ## 環境
 - Windows 11 Pro, 25H2, 26200.8037
 - Windows Subsystem for Linux (WSL2), Ubuntu 24.04.4 (LTS), 6.6.87.2-microsoft-standard-WSL2
+- Java OpenJDK 25.0.1 2025-10-21 (LTS), Temurin-25.0.1+8
 
 ## 全体図
 ```
@@ -10,6 +11,10 @@
     +-home
     |     +-mizuki
     |           +-download
+    |           |     +-credit_card_statement
+    |           |     |     |-YYYYMM_utf8.csv
+    |           |     |     |-YYYYMM_utf8_subtotal.csv
+    |           |     |
     |           |     |-OpenJDK25U-jdk_x64_linux_hotspot_25.0.1_8.tar.gz
     |           |
     |           +-workspace
@@ -145,12 +150,12 @@ code .
 
 ## 3. プログラムの実装
 ```
-//「利用店名」ごとの「利用金額」の小計を計算する。
+//「利用店名」ごとの「支払い金額（今回の支払い金額）」の小計を計算する。
 Map<String, Integer> subtotals = transactions.stream()
         .collect(Collectors.groupingBy(CreditCardTransaction::storeName,
                                        Collectors.summingInt(CreditCardTransaction::amount)));
 
-//「利用金額」の降順、「利用店名」の昇順でソートする。
+//「支払い金額（今回の支払い金額）」の降順、「利用店名」の昇順でソートする。
 List<Map.Entry<String, Integer>> sortedSubtotals = subtotals.entrySet().stream()
         .sorted(Map.Entry.<String, Integer>comparingByValue().reversed()
                 .thenComparing(Map.Entry.comparingByKey()))
@@ -174,13 +179,19 @@ for (Map.Entry<String, Integer> entry : sortedSubtotals) {
 - [Collectors (Java Platform SE 25 & JDK 25)](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/stream/Collectors.html)
 
 ## 4. プログラムの実行
+CSVファイルの文字エンコーディングがShift_JISなので、事前の処理として、文字エンコーディングをUTF-8に変換しておく。
+1. CSVファイルのファイル名を「YYYYMM.csv」から「YYYYMM_utf8.csv」に変更する。
+2. CSVファイルをVisual Studio Codeで開く。デフォルトの文字エンコーディングはUTF-8なので文字化けしている。
+3. ウインドウの右下のエンコーディング表示をクリックして「エンコードを指定して再度開く」を選択してから「Shift_JIS」を選択する。
+4. ウインドウの右下のエンコーディング表示をクリックして「エンコードを指定して保存する」を選択してから「UTF-8」を選択する。
+
 第1引数にCSVファイルのフルパスを指定して実行する。
 ```
 cd /home/mizuki/workspace/java25/smbcvpasscsv
-java25 CSV2Subtotal.java /home/mizuki/downloads/202603.csv
+java25 CSV2Subtotal.java /home/mizuki/download/credit_card_statement/YYYYMM_utf8.csv
 ```
 
 指定したCSVファイルと同じディレクトリに小計ファイルが作成される。
 ```
-/home/mizuki/downloads/202603_subtotal.csv
+/home/mizuki/download/credit_card_statement/YYYYMM_utf8_subtotal.csv
 ```
