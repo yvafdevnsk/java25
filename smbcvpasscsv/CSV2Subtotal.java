@@ -8,35 +8,48 @@ import java.util.stream.Collectors;
 
 /**
  * 三井住友カード会員向けインターネットサービス『Vpass』の利用明細のCSVファイルから
- * 「利用店名」ごとの「利用金額」の小計および累計を出力する。
+ * 「利用店名」ごとの「支払い金額（今回の支払い金額）」の小計および累計を出力する。
  * 
- * CSVファイルの1行は以下のような形式の11項目であると仮定する。
- * 利用日(YYYY/M/D),利用店名,カード使用者,支払い区分,分割回数,支払い予定月('YY/MM),利用金額,支払い総額(現地通貨額),支払い総額(通貨略称),内手数料(換算レート),内手数料(換算日)
+ * 利用明細のCSVファイルは、月の支払い金額の確定前と確定後で項目数が異なっている。
+ * このプログラムでは、月の支払い金額の確定後のCSVファイルを想定している。
  * 
- * CSVファイルにヘッダー行は存在しない。
- * CSVファイルの1行の実データは13項目あるが最後の2項目は内容が不明なため無視する。
- * このプログラムで使用するのは「利用店名」と「利用金額」の2項目のみである。
+ * CSVファイルの明細行は以下のような形式の6項目であると仮定する。
+ * 利用日(YYYY/MM/DD),利用店名,利用金額（総支払い金額）,支払い区分（内部情報のため不明）,分割払いにおける今回の回数,支払い金額（今回の支払い金額）
+ * 
+ * その他の仕様は以下の通りとする。
+ * ・文字エンコーディングはShift_JIS、改行コードはCRLFである。
+ * ・ヘッダー行は存在しない。
+ * ・1行目はクレジットカード情報、最終行は合計金額の行であるため、これらの行は無視する。
+ * ・空行も存在する可能性があるため、空行も無視する。
+ * ・このプログラムで使用するのは「利用店名」と「支払い金額（今回の支払い金額）」の2項目のみとする。
  */
 public class CSV2Subtotal {
     /**
-     * CSVデータを解析して「利用店名」ごとの「利用金額」の小計および累計を計算して別ファイルに出力する。
+     * CSVデータを解析して「利用店名」ごとの「支払い金額（今回の支払い金額）」の小計および累計を計算して別ファイルに出力する。
+     * 
+     * 事前の処理として、手作業でCSVファイルの文字エンコーディングをUTF-8に変換する。
+     * 入力データ
+     *     /home/mizuki/download/credit_card_statement/202603.csv
+     * 出力データ
+     *     /home/mizuki/download/credit_card_statement/202603_utf8.csv
      * 
      * 以下に入力データと出力データの例を示す。
+     * 出力データにはヘッダー行を追加する。
      * 入力データ
      *     ファイルのパス
-     *         /home/mizuki/downloads/202603.csv
+     *         /home/mizuki/download/credit_card_statement/202603_utf8.csv
      *     ファイルの内容
-     *         2026/2/27,まいばすけっと,ご本人,1回払い,,'26/03,591,591,,,,,
-     *         2026/2/26,まいばすけっと,ご本人,1回払い,,'26/03,670,670,,,,,
-     *         2026/2/25,まいばすけっと,ご本人,1回払い,,'26/03,3150,3150,,,,,
-     *         2026/2/24,バーガーキング,ご本人,1回払い,,'26/03,870,870,,,,,
-     *         2026/2/23,バーガーキング,ご本人,1回払い,,'26/03,870,870,,,,,
-     *         2026/2/5,スマートＥＸ（ＪＲ東海）,ご本人,1回払い,,'26/03,13990,13990,,,,,
+     *         2026/02/27,まいばすけっと,591,1,1,591
+     *         2026/02/26,まいばすけっと,670,1,1,670
+     *         2026/02/25,まいばすけっと,3150,1,1,3150
+     *         2026/02/24,バーガーキング,870,1,1,870
+     *         2026/02/23,バーガーキング,870,1,1,870
+     *         2026/02/05,スマートＥＸ（ＪＲ東海）,13990,1,1,13990
      * 出力データ
      *     ファイルのパス
-     *         /home/mizuki/downloads/202603_subtotal.csv
+     *         /home/mizuki/download/credit_card_statement/202603_utf8_subtotal.csv
      *     ファイルの内容
-     *         "利用店名","利用金額小計","利用金額累計"
+     *         "利用店名","支払い金額（今回の支払い金額）小計","支払い金額（今回の支払い金額）累計"
      *         "まいばすけっと","4411","4411"
      *         "バーガーキング","1740","6151"
      *         "スマートＥＸ（ＪＲ東海）","13990","20141"
@@ -61,21 +74,27 @@ public class CSV2Subtotal {
         }
 
         //CSVファイルを読み込む。
+        //空行を除外してから、1行目（クレジットカード情報）と最終行（合計金額）を除外して「利用店名」と「支払い金額（今回の支払い金額）」を格納するCreditCardTransactionのリストを作成する。
         List<CreditCardTransaction> transactions = new ArrayList<>();
         try {
-            Files.readAllLines(inputCsvPath).stream()
+            List<String> lines = Files.readAllLines(inputCsvPath).stream()
+                    .filter(line -> !line.isBlank())
+                    .collect(Collectors.toList());
+            lines.stream()
+                    .skip(1)
+                    .limit(Math.max(0, lines.size() - 2L))
                     .forEach(line -> transactions.add(CreditCardTransaction.fromCsvLine(line)));
         } catch (IOException e) {
             System.err.println("CSVファイルの読み込みに失敗しました: " + e.getMessage());
             System.exit(1);
         }
 
-        //「利用店名」ごとの「利用金額」の小計を計算する。
+        //「利用店名」ごとの「支払い金額（今回の支払い金額）」の小計を計算する。
         Map<String, Integer> subtotals = transactions.stream()
                 .collect(Collectors.groupingBy(CreditCardTransaction::storeName,
                                                Collectors.summingInt(CreditCardTransaction::amount)));
 
-        //「利用金額」の降順、「利用店名」の昇順でソートする。
+        //「支払い金額（今回の支払い金額）」の降順、「利用店名」の昇順でソートする。
         List<Map.Entry<String, Integer>> sortedSubtotals = subtotals.entrySet().stream()
                 .sorted(Map.Entry.<String, Integer>comparingByValue().reversed()
                         .thenComparing(Map.Entry.comparingByKey()))
@@ -90,14 +109,14 @@ public class CSV2Subtotal {
         }
 
         //ヘッダーを追加する。
-        outputLines.add(0, String.join(",", csvQuote("利用店名"), csvQuote("利用金額小計"), csvQuote("利用金額累計")));
+        outputLines.add(0, String.join(",", csvQuote("利用店名"), csvQuote("支払い金額（今回の支払い金額）小計"), csvQuote("支払い金額（今回の支払い金額）累計")));
 
         //ファイルに出力する。
         PathComponents pathComponents = splitPath(inputCsvPath);
         Path outputCsvPath = Path.of(pathComponents.directory(), pathComponents.fileNameWithoutExtension() + "_subtotal.csv");
         try {
             Files.write(outputCsvPath, outputLines);
-            System.out.println("小計を出力しました: " + outputCsvPath);
+            System.out.println("「利用店名」ごとの「支払い金額（今回の支払い金額）」の小計および累計を出力しました: " + outputCsvPath);
         } catch (IOException e) {
             System.err.println("CSVファイルの書き込みに失敗しました: " + e.getMessage());
             System.exit(1);
@@ -105,12 +124,23 @@ public class CSV2Subtotal {
     }
 
     /**
-     * CSVの行から「利用店名」と「利用金額」を格納する。
+     * CSVの明細行から「利用店名」と「支払い金額（今回の支払い金額）」を格納する。
+     * 
+     * CSVの明細行は以下のような形式の6項目であると仮定する。
+     * [0]利用日(YYYY/MM/DD)
+     * [1]利用店名
+     * [2]利用金額（総支払い金額）
+     * [3]支払い区分（内部情報のため不明）
+     * [4]分割払いにおける今回の回数
+     * [5]支払い金額（今回の支払い金額）
      */
     private record CreditCardTransaction(String storeName, int amount) {
         public static CreditCardTransaction fromCsvLine(String csvLine) {
             String[] parts = csvLine.split(",");
-            return new CreditCardTransaction(parts[1], Integer.parseInt(parts[6]));
+            if (parts.length < 6) {
+                throw new IllegalArgumentException("CSVの明細行の項目数が不足しています: " + csvLine);
+            }
+            return new CreditCardTransaction(parts[1], Integer.parseInt(parts[5]));
         }
     }
 
