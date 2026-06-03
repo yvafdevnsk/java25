@@ -179,13 +179,22 @@ for (Map.Entry<String, Integer> entry : sortedSubtotals) {
 - [Collectors (Java Platform SE 25 & JDK 25)](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/stream/Collectors.html)
 
 ## 4. プログラムの実行
-CSVファイルの文字エンコーディングがShift_JISなので、事前の処理として、文字エンコーディングをUTF-8に変換しておく。
-1. CSVファイルのファイル名を「YYYYMM.csv」から「YYYYMM_utf8.csv」に変更する。
+CSVファイルの文字エンコーディングがShift_JISなので、事前の処理として、文字エンコーディングをUTF-8に変換しておく。  
+  
+Windows上で次の作業を実施する。
+1. VpassのサイトからダウンロードしたCSVファイル「YYYYMM.csv」をコピーする。ファイル名を変更して「YYYYMM_shiftjis.csv」と「YYYYMM_utf8.csv」の2つのファイルを作成する。
 2. CSVファイルをVisual Studio Codeで開く。デフォルトの文字エンコーディングはUTF-8なので文字化けしている。
 3. ウインドウの右下のエンコーディング表示をクリックして「エンコードを指定して再度開く」を選択してから「Shift_JIS」を選択する。
 4. ウインドウの右下のエンコーディング表示をクリックして「エンコードを指定して保存する」を選択してから「UTF-8」を選択する。
 
-第1引数にCSVファイルのフルパスを指定して実行する。
+WSL上で次の作業を実施する。
+```
+cd /home/mizuki/download/credit_card_statement
+explorer.exe .
+```
+WSL側のエクスプローラーにCSVファイル「YYYYMM_utf8.csv」をコピーする。  
+  
+第1引数にCSVファイルのフルパスを指定してプログラムを実行する。
 ```
 cd /home/mizuki/workspace/java25/smbcvpasscsv
 java25 CSV2Subtotal.java /home/mizuki/download/credit_card_statement/YYYYMM_utf8.csv
@@ -194,4 +203,10 @@ java25 CSV2Subtotal.java /home/mizuki/download/credit_card_statement/YYYYMM_utf8
 指定したCSVファイルと同じディレクトリに小計ファイルが作成される。
 ```
 /home/mizuki/download/credit_card_statement/YYYYMM_utf8_subtotal.csv
+```
+
+WSL側のVisual Studio Codeで小計ファイルを確認する。
+```
+cd /home/mizuki/download/credit_card_statement
+code YYYYMM_utf8_subtotal.csv
 ```
